@@ -1,12 +1,22 @@
 import { ArrowButton } from 'src/ui/arrow-button';
 import { Button } from 'src/ui/button';
+import { Text } from 'src/ui/text';
+import { Select } from 'src/ui/select';
+import { RadioGroup } from 'src/ui/radio-group';
+import { Separator } from 'src/ui/separator';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { defaultArticleState } from 'src/constants/articleProps';
+import {
+	defaultArticleState,
+	fontFamilyOptions,
+	fontColors,
+	backgroundColors,
+	contentWidthArr,
+	fontSizeOptions,
+} from 'src/constants/articleProps';
 import clsx from 'clsx';
 
 import styles from './ArticleParamsForm.module.scss';
 
-/** Функция для обработки применения настроек */
 export type OnApply = (settings: typeof defaultArticleState) => void;
 
 type ArticleParamsFormProps = {
@@ -29,7 +39,6 @@ export const ArticleParamsForm = ({
 	const sidebarRef = useRef<HTMLElement>(null);
 	const isArrowClick = useRef(false);
 
-	// Управление видимостью сайдбара с анимацией
 	useEffect(() => {
 		if (isOpen) {
 			setIsSidebarVisible(true);
@@ -41,12 +50,11 @@ export const ArticleParamsForm = ({
 		}
 	}, [isOpen]);
 
-	// Обновление локальных настроек
 	useEffect(() => {
 		setLocalSettings(currentSettings);
 	}, [currentSettings]);
 
-	// Обработчик клика по документу
+	//Обработчик клика по документу
 	const handleDocumentClick = useCallback(
 		(event: MouseEvent) => {
 			if (isArrowClick.current) {
@@ -65,7 +73,7 @@ export const ArticleParamsForm = ({
 		[isOpen, onClose]
 	);
 
-	// Подписка на клики по документу
+	//Подписка на клики по документу
 	useEffect(() => {
 		document.addEventListener('mousedown', handleDocumentClick);
 		return () => {
@@ -73,7 +81,7 @@ export const ArticleParamsForm = ({
 		};
 	}, [handleDocumentClick]);
 
-	// Обработчик отправки формы
+	//Обработчик отправки формы
 	const handleFormSubmit = useCallback(
 		(e: React.FormEvent) => {
 			e.preventDefault();
@@ -82,7 +90,7 @@ export const ArticleParamsForm = ({
 		[localSettings, onApply]
 	);
 
-	// Обработчик сброса формы
+	//Обработчик сброса формы
 	const handleFormReset = useCallback(
 		(e: React.FormEvent) => {
 			e.preventDefault();
@@ -92,7 +100,7 @@ export const ArticleParamsForm = ({
 		[onApply]
 	);
 
-	// Обработчик клика по стрелке
+	//Обработчик клика по стрелке
 	const handleArrowClick = () => {
 		isArrowClick.current = true;
 
@@ -117,6 +125,68 @@ export const ArticleParamsForm = ({
 						className={styles.form}
 						onSubmit={handleFormSubmit}
 						onReset={handleFormReset}>
+						<Text as='h2' size={31} weight={800} uppercase dynamicLite>
+							Задайте параметры
+						</Text>
+						<Select
+							title='Шрифт'
+							selected={localSettings.fontFamilyOption}
+							options={fontFamilyOptions}
+							onChange={(selected) =>
+								setLocalSettings({
+									...localSettings,
+									fontFamilyOption: selected,
+								})
+							}
+						/>
+						<RadioGroup
+							title='Размер шрифта'
+							name='fontSize'
+							selected={localSettings.fontSizeOption}
+							options={fontSizeOptions}
+							onChange={(selected) =>
+								setLocalSettings({
+									...localSettings,
+									fontSizeOption: selected,
+								})
+							}
+						/>
+						<Select
+							title='Цвет шрифта'
+							selected={localSettings.fontColor}
+							options={fontColors}
+							onChange={(selected) =>
+								setLocalSettings({
+									...localSettings,
+									fontColor: selected,
+								})
+							}
+						/>
+						<Separator />
+
+						<Select
+							title='Цвет фона'
+							selected={localSettings.backgroundColor}
+							options={backgroundColors}
+							onChange={(selected) =>
+								setLocalSettings({
+									...localSettings,
+									backgroundColor: selected,
+								})
+							}
+						/>
+
+						<Select
+							title='Ширина контента'
+							selected={localSettings.contentWidth}
+							options={contentWidthArr}
+							onChange={(selected) =>
+								setLocalSettings({
+									...localSettings,
+									contentWidth: selected,
+								})
+							}
+						/>
 						<div className={styles.bottomContainer}>
 							<Button title='Сбросить' htmlType='reset' type='clear' />
 							<Button title='Применить' htmlType='submit' type='apply' />
