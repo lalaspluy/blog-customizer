@@ -4,7 +4,7 @@ import { Text } from 'src/ui/text';
 import { Select } from 'src/ui/select';
 import { RadioGroup } from 'src/ui/radio-group';
 import { Separator } from 'src/ui/separator';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
 	defaultArticleState,
 	fontFamilyOptions,
@@ -14,17 +14,18 @@ import {
 	fontSizeOptions,
 } from 'src/constants/articleProps';
 import clsx from 'clsx';
-
 import styles from './ArticleParamsForm.module.scss';
 
-export type OnApply = (settings: typeof defaultArticleState) => void;
+type ArticleSettings = typeof defaultArticleState;
+
+export type OnApply = (settings: ArticleSettings) => void;
 
 type ArticleParamsFormProps = {
 	isOpen: boolean;
 	onClose: () => void;
 	onOpen: () => void;
 	onApply: OnApply;
-	currentSettings: typeof defaultArticleState;
+	currentSettings: ArticleSettings;
 };
 
 export const ArticleParamsForm = ({
@@ -35,87 +36,47 @@ export const ArticleParamsForm = ({
 	currentSettings,
 }: ArticleParamsFormProps) => {
 	const [localSettings, setLocalSettings] = useState(currentSettings);
-	const [isSidebarVisible, setIsSidebarVisible] = useState(false);
 	const sidebarRef = useRef<HTMLElement>(null);
-	const isArrowClick = useRef(false);
 
-	const isOpenRef = useRef(isOpen);
-	const onCloseRef = useRef(onClose);
-
-	useEffect(() => {
-		isOpenRef.current = isOpen;
-	}, [isOpen]);
-
-	useEffect(() => {
-		onCloseRef.current = onClose;
-	}, [onClose]);
-
-	useEffect(() => {
-		if (isOpen) {
-			setIsSidebarVisible(true);
-		} else {
-			const timer = setTimeout(() => {
-				setIsSidebarVisible(false);
-			}, 500);
-			return () => clearTimeout(timer);
-		}
-	}, [isOpen]);
-
+	// Синхронизация с внешними настройками
 	useEffect(() => {
 		setLocalSettings(currentSettings);
 	}, [currentSettings]);
 
-	//Обработчик клика по документу
-	const handleDocumentClick = useCallback((event: MouseEvent) => {
-		if (isArrowClick.current) {
-			isArrowClick.current = false;
-			return;
-		}
-
-		const isInsideSidebar = sidebarRef.current?.contains(event.target as Node);
-
-		if (!isInsideSidebar && isOpenRef.current) {
-			onCloseRef.current();
-		}
-	}, []);
-
-	//Подписка на клики по документу
+	// Обработчик клика вне сайдбара
 	useEffect(() => {
-		document.addEventListener('mousedown', handleDocumentClick);
-		return () => {
-			document.removeEventListener('mousedown', handleDocumentClick);
-		};
-	}, [handleDocumentClick]);
+		if (!isOpen) return;
 
-	//Обработчик отправки формы
+		const handleDocumentClick = (event: MouseEvent) => {
+			if (!sidebarRef.current?.contains(event.target as Node)) {
+				onClose();
+			}
+		};
+
+		document.addEventListener('mousedown', handleDocumentClick);
+		return () => document.removeEventListener('mousedown', handleDocumentClick);
+	}, [isOpen, onClose]);
+
 	const handleFormSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
 		onApply(localSettings);
 	};
 
-	//Обработчик сброса формы
 	const handleFormReset = (e: React.FormEvent) => {
 		e.preventDefault();
 		setLocalSettings(defaultArticleState);
 		onApply(defaultArticleState);
 	};
 
-	//Обработчик клика по стрелке
 	const handleArrowClick = () => {
-		isArrowClick.current = true;
-
-		if (isOpen) {
-			onClose();
-		} else {
-			onOpen();
-		}
+		isOpen ? onClose() : onOpen();
 	};
 
 	return (
 		<>
 			<ArrowButton isOpen={isOpen} onClick={handleArrowClick} />
 
-			{isSidebarVisible && (
+			{isOpen && (
 				<aside
 					ref={sidebarRef}
 					className={clsx(styles.container, {
@@ -128,6 +89,7 @@ export const ArticleParamsForm = ({
 						<Text as='h2' size={31} weight={800} uppercase>
 							Задайте параметры
 						</Text>
+
 						<Select
 							title='Шрифт'
 							selected={localSettings.fontFamilyOption}
@@ -139,6 +101,7 @@ export const ArticleParamsForm = ({
 								})
 							}
 						/>
+
 						<RadioGroup
 							title='Размер шрифта'
 							name='fontSize'
@@ -151,6 +114,7 @@ export const ArticleParamsForm = ({
 								})
 							}
 						/>
+
 						<Select
 							title='Цвет шрифта'
 							selected={localSettings.fontColor}
@@ -162,6 +126,7 @@ export const ArticleParamsForm = ({
 								})
 							}
 						/>
+
 						<Separator />
 
 						<Select
@@ -187,6 +152,7 @@ export const ArticleParamsForm = ({
 								})
 							}
 						/>
+
 						<div className={styles.bottomContainer}>
 							<Button title='Сбросить' htmlType='reset' type='clear' />
 							<Button title='Применить' htmlType='submit' type='apply' />
