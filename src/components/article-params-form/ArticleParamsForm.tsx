@@ -54,7 +54,6 @@ export const ArticleParamsForm = ({
 		setLocalSettings(currentSettings);
 	}, [currentSettings]);
 
-	// Строго типизированные обработчики
 	const updateSetting = <K extends keyof typeof localSettings>(
 		key: K,
 		value: (typeof localSettings)[K]
@@ -78,7 +77,6 @@ export const ArticleParamsForm = ({
 		isOpen ? onClose() : onOpen();
 	};
 
-	// Обработчик клика по документу
 	useEffect(() => {
 		const handleDocumentClick = (event: MouseEvent) => {
 			if (isArrowClick.current) {
