@@ -39,6 +39,17 @@ export const ArticleParamsForm = ({
 	const sidebarRef = useRef<HTMLElement>(null);
 	const isArrowClick = useRef(false);
 
+	const isOpenRef = useRef(isOpen);
+	const onCloseRef = useRef(onClose);
+
+	useEffect(() => {
+		isOpenRef.current = isOpen;
+	}, [isOpen]);
+
+	useEffect(() => {
+		onCloseRef.current = onClose;
+	}, [onClose]);
+
 	useEffect(() => {
 		if (isOpen) {
 			setIsSidebarVisible(true);
@@ -55,23 +66,18 @@ export const ArticleParamsForm = ({
 	}, [currentSettings]);
 
 	//Обработчик клика по документу
-	const handleDocumentClick = useCallback(
-		(event: MouseEvent) => {
-			if (isArrowClick.current) {
-				isArrowClick.current = false;
-				return;
-			}
+	const handleDocumentClick = useCallback((event: MouseEvent) => {
+		if (isArrowClick.current) {
+			isArrowClick.current = false;
+			return;
+		}
 
-			const isInsideSidebar = sidebarRef.current?.contains(
-				event.target as Node
-			);
+		const isInsideSidebar = sidebarRef.current?.contains(event.target as Node);
 
-			if (!isInsideSidebar && isOpen) {
-				onClose();
-			}
-		},
-		[isOpen, onClose]
-	);
+		if (!isInsideSidebar && isOpenRef.current) {
+			onCloseRef.current();
+		}
+	}, []);
 
 	//Подписка на клики по документу
 	useEffect(() => {
@@ -82,23 +88,17 @@ export const ArticleParamsForm = ({
 	}, [handleDocumentClick]);
 
 	//Обработчик отправки формы
-	const handleFormSubmit = useCallback(
-		(e: React.FormEvent) => {
-			e.preventDefault();
-			onApply(localSettings);
-		},
-		[localSettings, onApply]
-	);
+	const handleFormSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+		onApply(localSettings);
+	};
 
 	//Обработчик сброса формы
-	const handleFormReset = useCallback(
-		(e: React.FormEvent) => {
-			e.preventDefault();
-			setLocalSettings(defaultArticleState);
-			onApply(defaultArticleState);
-		},
-		[onApply]
-	);
+	const handleFormReset = (e: React.FormEvent) => {
+		e.preventDefault();
+		setLocalSettings(defaultArticleState);
+		onApply(defaultArticleState);
+	};
 
 	//Обработчик клика по стрелке
 	const handleArrowClick = () => {
@@ -125,7 +125,7 @@ export const ArticleParamsForm = ({
 						className={styles.form}
 						onSubmit={handleFormSubmit}
 						onReset={handleFormReset}>
-						<Text as='h2' size={31} weight={800} uppercase dynamicLite>
+						<Text as='h2' size={31} weight={800} uppercase>
 							Задайте параметры
 						</Text>
 						<Select
