@@ -14,18 +14,17 @@ import {
 	fontSizeOptions,
 } from 'src/constants/articleProps';
 import clsx from 'clsx';
+
 import styles from './ArticleParamsForm.module.scss';
 
-type ArticleSettings = typeof defaultArticleState;
-
-export type OnApply = (settings: ArticleSettings) => void;
+export type OnApply = (settings: typeof defaultArticleState) => void;
 
 type ArticleParamsFormProps = {
 	isOpen: boolean;
 	onClose: () => void;
 	onOpen: () => void;
 	onApply: OnApply;
-	currentSettings: ArticleSettings;
+	currentSettings: typeof defaultArticleState;
 };
 
 export const ArticleParamsForm = ({
@@ -36,26 +35,32 @@ export const ArticleParamsForm = ({
 	currentSettings,
 }: ArticleParamsFormProps) => {
 	const [localSettings, setLocalSettings] = useState(currentSettings);
+	const [isSidebarVisible, setIsSidebarVisible] = useState(false);
 	const sidebarRef = useRef<HTMLElement>(null);
+	const isArrowClick = useRef(false);
 
-	// Синхронизация с внешними настройками
+	useEffect(() => {
+		if (isOpen) {
+			setIsSidebarVisible(true);
+		} else {
+			const timer = setTimeout(() => {
+				setIsSidebarVisible(false);
+			}, 500);
+			return () => clearTimeout(timer);
+		}
+	}, [isOpen]);
+
 	useEffect(() => {
 		setLocalSettings(currentSettings);
 	}, [currentSettings]);
 
-	// Обработчик клика вне сайдбара
-	useEffect(() => {
-		if (!isOpen) return;
-
-		const handleDocumentClick = (event: MouseEvent) => {
-			if (!sidebarRef.current?.contains(event.target as Node)) {
-				onClose();
-			}
-		};
-
-		document.addEventListener('mousedown', handleDocumentClick);
-		return () => document.removeEventListener('mousedown', handleDocumentClick);
-	}, [isOpen, onClose]);
+	// Строго типизированные обработчики
+	const updateSetting = <K extends keyof typeof localSettings>(
+		key: K,
+		value: (typeof localSettings)[K]
+	) => {
+		setLocalSettings((prev) => ({ ...prev, [key]: value }));
+	};
 
 	const handleFormSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -69,14 +74,32 @@ export const ArticleParamsForm = ({
 	};
 
 	const handleArrowClick = () => {
+		isArrowClick.current = true;
 		isOpen ? onClose() : onOpen();
 	};
+
+	// Обработчик клика по документу
+	useEffect(() => {
+		const handleDocumentClick = (event: MouseEvent) => {
+			if (isArrowClick.current) {
+				isArrowClick.current = false;
+				return;
+			}
+
+			if (!sidebarRef.current?.contains(event.target as Node) && isOpen) {
+				onClose();
+			}
+		};
+
+		document.addEventListener('mousedown', handleDocumentClick);
+		return () => document.removeEventListener('mousedown', handleDocumentClick);
+	}, [isOpen, onClose]);
 
 	return (
 		<>
 			<ArrowButton isOpen={isOpen} onClick={handleArrowClick} />
 
-			{isOpen && (
+			{isSidebarVisible && (
 				<aside
 					ref={sidebarRef}
 					className={clsx(styles.container, {
@@ -95,10 +118,7 @@ export const ArticleParamsForm = ({
 							selected={localSettings.fontFamilyOption}
 							options={fontFamilyOptions}
 							onChange={(selected) =>
-								setLocalSettings({
-									...localSettings,
-									fontFamilyOption: selected,
-								})
+								updateSetting('fontFamilyOption', selected)
 							}
 						/>
 
@@ -107,24 +127,14 @@ export const ArticleParamsForm = ({
 							name='fontSize'
 							selected={localSettings.fontSizeOption}
 							options={fontSizeOptions}
-							onChange={(selected) =>
-								setLocalSettings({
-									...localSettings,
-									fontSizeOption: selected,
-								})
-							}
+							onChange={(selected) => updateSetting('fontSizeOption', selected)}
 						/>
 
 						<Select
 							title='Цвет шрифта'
 							selected={localSettings.fontColor}
 							options={fontColors}
-							onChange={(selected) =>
-								setLocalSettings({
-									...localSettings,
-									fontColor: selected,
-								})
-							}
+							onChange={(selected) => updateSetting('fontColor', selected)}
 						/>
 
 						<Separator />
@@ -134,10 +144,7 @@ export const ArticleParamsForm = ({
 							selected={localSettings.backgroundColor}
 							options={backgroundColors}
 							onChange={(selected) =>
-								setLocalSettings({
-									...localSettings,
-									backgroundColor: selected,
-								})
+								updateSetting('backgroundColor', selected)
 							}
 						/>
 
@@ -145,12 +152,7 @@ export const ArticleParamsForm = ({
 							title='Ширина контента'
 							selected={localSettings.contentWidth}
 							options={contentWidthArr}
-							onChange={(selected) =>
-								setLocalSettings({
-									...localSettings,
-									contentWidth: selected,
-								})
-							}
+							onChange={(selected) => updateSetting('contentWidth', selected)}
 						/>
 
 						<div className={styles.bottomContainer}>
