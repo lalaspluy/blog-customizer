@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client';
-import { StrictMode, useState } from 'react';
+import { StrictMode, useState, CSSProperties } from 'react';
 import clsx from 'clsx';
 
 import { Article } from './components/article/Article';
@@ -25,7 +25,7 @@ const App = () => {
 					'--font-color': articleSettings.fontColor.value,
 					'--container-width': articleSettings.contentWidth.value,
 					'--bg-color': articleSettings.backgroundColor.value,
-				} as React.CSSProperties
+				} as CSSProperties
 			}>
 			<ArticleParamsForm
 				onApply={setArticleSettings}
