@@ -12,96 +12,96 @@ import {
 	backgroundColors,
 	contentWidthArr,
 	fontSizeOptions,
+	ArticleStateType,
 } from 'src/constants/articleProps';
 import clsx from 'clsx';
 
 import styles from './ArticleParamsForm.module.scss';
 
-export type OnApply = (settings: typeof defaultArticleState) => void;
+export type OnApply = (settings: ArticleStateType) => void;
 
 type ArticleParamsFormProps = {
-	isOpen: boolean;
-	onClose: () => void;
-	onOpen: () => void;
 	onApply: OnApply;
-	currentSettings: typeof defaultArticleState;
+	currentSettings: ArticleStateType;
 };
 
 export const ArticleParamsForm = ({
-	isOpen,
-	onClose,
-	onOpen,
 	onApply,
 	currentSettings,
 }: ArticleParamsFormProps) => {
-	const [localSettings, setLocalSettings] = useState(currentSettings);
+	const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 	const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+	const [localSettings, setLocalSettings] = useState(currentSettings);
 	const sidebarRef = useRef<HTMLElement>(null);
-	const isArrowClick = useRef(false);
+	const isArrowButtonClicked = useRef(false);
 
 	useEffect(() => {
-		if (isOpen) {
+		if (isSidebarOpen) {
 			setIsSidebarVisible(true);
 		} else {
-			const timer = setTimeout(() => {
+			const hideSidebarTimer = setTimeout(() => {
 				setIsSidebarVisible(false);
 			}, 500);
-			return () => clearTimeout(timer);
+			return () => clearTimeout(hideSidebarTimer);
 		}
-	}, [isOpen]);
+	}, [isSidebarOpen]);
 
 	useEffect(() => {
-		setLocalSettings(currentSettings);
-	}, [currentSettings]);
+		if (!isSidebarOpen) return;
 
-	const updateSetting = <K extends keyof typeof localSettings>(
-		key: K,
-		value: (typeof localSettings)[K]
-	) => {
-		setLocalSettings((prev) => ({ ...prev, [key]: value }));
-	};
+		const handleDocumentClick = (event: MouseEvent) => {
+			if (isArrowButtonClicked.current) {
+				isArrowButtonClicked.current = false;
+				return;
+			}
 
-	const handleFormSubmit = (e: React.FormEvent) => {
+			const isClickInsideSidebar = sidebarRef.current?.contains(
+				event.target as Node
+			);
+
+			if (!isClickInsideSidebar) {
+				setIsSidebarOpen(false);
+			}
+		};
+
+		document.addEventListener('mousedown', handleDocumentClick);
+		return () => {
+			document.removeEventListener('mousedown', handleDocumentClick);
+		};
+	}, [isSidebarOpen]);
+
+	const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		onApply(localSettings);
 	};
 
-	const handleFormReset = (e: React.FormEvent) => {
+	const handleFormReset = (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		setLocalSettings(defaultArticleState);
 		onApply(defaultArticleState);
 	};
 
-	const handleArrowClick = () => {
-		isArrowClick.current = true;
-		isOpen ? onClose() : onOpen();
+	const handleArrowButtonClick = () => {
+		isArrowButtonClicked.current = true;
+		setIsSidebarOpen(!isSidebarOpen);
 	};
 
-	useEffect(() => {
-		const handleDocumentClick = (event: MouseEvent) => {
-			if (isArrowClick.current) {
-				isArrowClick.current = false;
-				return;
-			}
-
-			if (!sidebarRef.current?.contains(event.target as Node) && isOpen) {
-				onClose();
-			}
-		};
-
-		document.addEventListener('mousedown', handleDocumentClick);
-		return () => document.removeEventListener('mousedown', handleDocumentClick);
-	}, [isOpen, onClose]);
+	const updateSetting = <K extends keyof typeof localSettings>(
+		settingName: K,
+		newValue: (typeof localSettings)[K]
+	) => {
+		setLocalSettings((prev) => ({ ...prev, [settingName]: newValue }));
+	};
 
 	return (
 		<>
-			<ArrowButton isOpen={isOpen} onClick={handleArrowClick} />
+			<ArrowButton isOpen={isSidebarOpen} onClick={handleArrowButtonClick} />
 
 			{isSidebarVisible && (
 				<aside
 					ref={sidebarRef}
 					className={clsx(styles.container, {
-						[styles.container_open]: isOpen,
+						[styles.container_open]: isSidebarOpen,
 					})}>
 					<form
 						className={styles.form}
@@ -110,7 +110,6 @@ export const ArticleParamsForm = ({
 						<Text as='h2' size={31} weight={800} uppercase>
 							Задайте параметры
 						</Text>
-
 						<Select
 							title='Шрифт'
 							selected={localSettings.fontFamilyOption}
@@ -119,7 +118,6 @@ export const ArticleParamsForm = ({
 								updateSetting('fontFamilyOption', selected)
 							}
 						/>
-
 						<RadioGroup
 							title='Размер шрифта'
 							name='fontSize'
@@ -127,14 +125,12 @@ export const ArticleParamsForm = ({
 							options={fontSizeOptions}
 							onChange={(selected) => updateSetting('fontSizeOption', selected)}
 						/>
-
 						<Select
 							title='Цвет шрифта'
 							selected={localSettings.fontColor}
 							options={fontColors}
 							onChange={(selected) => updateSetting('fontColor', selected)}
 						/>
-
 						<Separator />
 
 						<Select
@@ -152,7 +148,6 @@ export const ArticleParamsForm = ({
 							options={contentWidthArr}
 							onChange={(selected) => updateSetting('contentWidth', selected)}
 						/>
-
 						<div className={styles.bottomContainer}>
 							<Button title='Сбросить' htmlType='reset' type='clear' />
 							<Button title='Применить' htmlType='submit' type='apply' />
